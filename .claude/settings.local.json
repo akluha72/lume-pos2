@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls c:/laragon/www/lume-pos-system2/.env*)",
+      "Bash(php artisan:*)",
+      "Bash(mysql -u root -e \"CREATE DATABASE IF NOT EXISTS lume_pos;\")",
+      "Bash(mysql -u root -e \"SHOW DATABASES LIKE 'lume%';\")",
+      "Bash(mysql -u root -e \"SHOW TABLES FROM lume_pos;\")",
+      "Bash(netstat -ano)",
+      "Read(//c/laragon/bin/mysql/**)",
+      "Read(//c/laragon/**)",
+      "Bash(mysql -u root -e \"SHOW TABLES FROM lume_pos_db;\")",
+      "Bash(mysql -h 127.0.0.1 -u root -e \"SHOW TABLES FROM lume_pos;\")",
+      "Bash(cd c:\\\\\\\\laragon\\\\\\\\www\\\\\\\\lume-pos-system2)",
+      "Bash(composer show:*)",
+      "Bash(composer require:*)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}
