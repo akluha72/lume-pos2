@@ -22,7 +22,7 @@ $statusConfig = [
 @endif
 
 {{-- ── Daily Target Progress ─────────────────────────────────────────────── --}}
-<div class="bg-linear-to-r from-indigo-600 via-violet-600 to-indigo-700 rounded-2xl p-5 shadow-lg mb-6"
+<div class="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 rounded-2xl p-5 shadow-lg mb-6"
      x-data="{
          target: 0,
          completed: {{ $stats['completed'] }},

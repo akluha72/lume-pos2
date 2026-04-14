@@ -88,7 +88,7 @@
                 <img src="{{ $product->image }}" alt="{{ $product->name }}"
                      class="w-full h-36 object-cover">
             @else
-                <div class="w-full h-36 bg-linear-to-br from-indigo-100 to-violet-100 flex items-center justify-center">
+                <div class="w-full h-36 bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center">
                     <i class="fas fa-image text-indigo-300 text-3xl"></i>
                 </div>
             @endif

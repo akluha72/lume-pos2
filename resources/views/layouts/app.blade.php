@@ -81,7 +81,7 @@
             <div class="px-3 py-4 border-t border-white/10" x-data="{ userMenu: false }" @click.outside="userMenu = false">
                 <button type="button" @click="userMenu = !userMenu"
                         class="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/10 cursor-pointer transition text-left">
-                    <div class="shrink-0 w-8 h-8 bg-linear-to-br from-violet-400 to-indigo-600 rounded-full flex items-center justify-center text-xs font-bold text-white uppercase">
+                    <div class="shrink-0 w-8 h-8 bg-gradient-to-br from-violet-400 to-indigo-600 rounded-full flex items-center justify-center text-xs font-bold text-white uppercase">
                         {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}
                     </div>
                     <div x-show="sidebarOpen" x-transition class="overflow-hidden flex-1 min-w-0">
@@ -134,7 +134,7 @@
                         </button>
                         <div class="w-px h-6 bg-gray-200"></div>
                         <div class="flex items-center gap-2.5">
-                            <div class="w-8 h-8 bg-linear-to-br from-violet-400 to-indigo-600 rounded-full flex items-center justify-center text-xs font-bold text-white uppercase">
+                            <div class="w-8 h-8 bg-gradient-to-br from-violet-400 to-indigo-600 rounded-full flex items-center justify-center text-xs font-bold text-white uppercase">
                                 {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}
                             </div>
                             <span class="text-sm font-medium text-gray-700 hidden sm:block">{{ auth()->user()->name ?? 'User' }}</span>

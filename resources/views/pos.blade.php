@@ -91,7 +91,7 @@ function launchDailyTargetConfetti() {
                                  class="w-full h-32 object-cover"
                                  x-show="product.image"
                                  x-on:error="$el.style.display='none'; $el.nextElementSibling.style.display='flex'">
-                            <div class="w-full h-32 bg-linear-to-br from-indigo-50 to-violet-100 flex items-center justify-center"
+                            <div class="w-full h-32 bg-gradient-to-br from-indigo-50 to-violet-100 flex items-center justify-center"
                                  :style="product.image ? 'display:none' : 'display:flex'">
                                 <i class="fas fa-image text-indigo-200 text-3xl"></i>
                             </div>
