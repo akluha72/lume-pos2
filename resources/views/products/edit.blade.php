@@ -21,7 +21,13 @@
 </div>
 @endif
 
-<form method="POST" action="{{ route('products.update', $product) }}" enctype="multipart/form-data"
+{{-- Delete form lives OUTSIDE the update form to prevent nested-form bug --}}
+<form id="delete-product-form" method="POST" action="{{ route('products.destroy', $product) }}"
+      onsubmit="return confirm('Permanently delete \'{{ addslashes($product->name) }}\'?')">
+    @csrf @method('DELETE')
+</form>
+
+<form id="edit-product-form" method="POST" action="{{ route('products.update', $product) }}" enctype="multipart/form-data"
       x-data="{ imagePreview: null }">
     @csrf @method('PUT')
 
@@ -33,26 +39,89 @@
             {{-- Basic Info --}}
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h3 class="text-sm font-semibold text-gray-900 mb-4">Product Details</h3>
-                <div class="space-y-4">
 
-                    <div>
+                {{-- Name + Image side by side --}}
+                <div class="flex items-start gap-4 mb-4">
+
+                    {{-- Product Name --}}
+                    <div class="flex-1">
                         <label class="block text-xs font-semibold text-gray-600 mb-1.5">Product Name <span class="text-red-400">*</span></label>
                         <input type="text" name="name" value="{{ old('name', $product->name) }}" required
                                class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 @error('name') border-red-400 @enderror">
                         @error('name')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
                     </div>
 
+                    {{-- Clickable image preview --}}
+                    <div class="shrink-0 flex flex-col items-center gap-1">
+                        <div class="w-24 h-24 rounded-xl border-2 border-dashed border-gray-200 overflow-hidden flex items-center justify-center bg-gray-50 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-colors"
+                             title="Click to replace image"
+                             @click="$refs.imageInput.click()">
+                            <img x-show="imagePreview" :src="imagePreview" class="w-full h-full object-cover rounded-xl">
+                            @if($product->image)
+                                <img x-show="!imagePreview" src="{{ $product->image }}" alt="{{ $product->name }}"
+                                     class="w-full h-full object-cover rounded-xl">
+                            @else
+                                <div x-show="!imagePreview" class="flex flex-col items-center gap-1 text-gray-300">
+                                    <i class="fas fa-image text-2xl"></i>
+                                    <span class="text-[10px] font-medium">Photo</span>
+                                </div>
+                            @endif
+                        </div>
+                        <input type="file" name="image" accept="image/*" x-ref="imageInput" class="hidden"
+                               @change="imagePreview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null">
+                        <span class="text-[10px] text-gray-400">Click to replace</span>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
+                        <div x-data="{
+                                open: false,
+                                query: '{{ old('category', $product->category) }}',
+                                categories: @json($categories->values()),
+                                get filtered() {
+                                    return this.query
+                                        ? this.categories.filter(c => c.toLowerCase().includes(this.query.toLowerCase()))
+                                        : this.categories;
+                                },
+                                get isNew() {
+                                    return this.query && !this.categories.some(c => c.toLowerCase() === this.query.toLowerCase());
+                                },
+                                select(cat) { this.query = cat; this.open = false; }
+                            }" @click.outside="open = false" class="relative">
                             <label class="block text-xs font-semibold text-gray-600 mb-1.5">Category <span class="text-red-400">*</span></label>
-                            <input type="text" name="category" value="{{ old('category', $product->category) }}" required
-                                   list="category-suggestions"
+                            <input type="text" name="category" x-model="query" required autocomplete="off"
+                                   placeholder="Select or type new…"
+                                   @focus="open = true"
+                                   @input="open = true"
+                                   @keydown.escape="open = false"
+                                   @keydown.enter.prevent="filtered[0] && !isNew ? select(filtered[0]) : open = false"
                                    class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 @error('category') border-red-400 @enderror">
-                            <datalist id="category-suggestions">
-                                @foreach($categories as $cat)
-                                    <option value="{{ $cat }}">
-                                @endforeach
-                            </datalist>
+                            @error('category')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                            {{-- Dropdown --}}
+                            <div x-show="open && (filtered.length > 0 || isNew)"
+                                 x-transition:enter="transition duration-100"
+                                 x-transition:enter-start="opacity-0 -translate-y-1"
+                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                 class="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                                <div class="max-h-44 overflow-y-auto">
+                                    <template x-for="cat in filtered" :key="cat">
+                                        <button type="button" @click="select(cat)"
+                                                class="w-full text-left px-4 py-2.5 text-sm transition-colors"
+                                                :class="query === cat ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'"
+                                                x-text="cat"></button>
+                                    </template>
+                                </div>
+                                <template x-if="isNew">
+                                    <div class="border-t border-gray-100">
+                                        <button type="button" @click="select(query)"
+                                                class="w-full text-left px-4 py-2.5 text-sm text-indigo-600 hover:bg-indigo-50 font-medium flex items-center gap-1.5 transition-colors">
+                                            <i class="fas fa-plus text-xs"></i>
+                                            Create "<span x-text="query" class="font-bold"></span>"
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 mb-1.5">Base Price (RM) <span class="text-red-400">*</span></label>
@@ -77,29 +146,6 @@
                     </div>
                 </div>
             </div>
-
-            {{-- Image --}}
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h3 class="text-sm font-semibold text-gray-900 mb-4">Product Image</h3>
-                <div class="flex items-start gap-5">
-                    <div class="w-28 h-28 rounded-xl border-2 border-dashed border-gray-200 overflow-hidden shrink-0 flex items-center justify-center bg-gray-50">
-                        <img x-show="imagePreview" :src="imagePreview" class="w-full h-full object-cover rounded-xl">
-                        @if($product->image)
-                            <img x-show="!imagePreview" src="{{ $product->image }}" alt="{{ $product->name }}"
-                                 class="w-full h-full object-cover rounded-xl">
-                        @else
-                            <i x-show="!imagePreview" class="fas fa-image text-gray-300 text-3xl"></i>
-                        @endif
-                    </div>
-                    <div class="flex-1">
-                        <label class="block text-xs font-semibold text-gray-600 mb-2">Replace image</label>
-                        <input type="file" name="image" accept="image/*"
-                               class="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                               @change="imagePreview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null">
-                        <p class="text-xs text-gray-400 mt-1.5">Leave blank to keep current image</p>
-                    </div>
-                </div>
-            </div>
         </div>
 
         {{-- ── Right: settings + actions ── --}}
@@ -120,43 +166,9 @@
                             <p class="text-xs text-gray-400">Show this product in the POS screen</p>
                         </div>
                     </label>
-                    <div class="border-t border-gray-100 pt-4">
-                        <label class="flex items-start gap-3 cursor-pointer">
-                            <div class="mt-0.5">
-                                <input type="hidden" name="is_customizable" value="0">
-                                <input type="checkbox" name="is_customizable" value="1"
-                                       {{ $product->is_customizable ? 'checked' : '' }}
-                                       class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-300">
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-gray-800">Has Customizations</p>
-                                <p class="text-xs text-gray-400">Enables variant picker in POS</p>
-                            </div>
-                        </label>
-                    </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-3">
-                <button type="submit"
-                        class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm">
-                    Save Changes
-                </button>
-                <a href="{{ route('products.index') }}"
-                   class="block text-center w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-colors">
-                    Back to Products
-                </a>
-                <div class="border-t border-gray-100 pt-3">
-                    <form method="POST" action="{{ route('products.destroy', $product) }}"
-                          onsubmit="return confirm('Permanently delete \'{{ addslashes($product->name) }}\'?')">
-                        @csrf @method('DELETE')
-                        <button type="submit"
-                                class="w-full py-2 text-red-500 hover:text-red-700 text-sm font-medium flex items-center justify-center gap-2 hover:bg-red-50 rounded-xl transition-colors">
-                            <i class="fas fa-trash text-xs"></i> Delete Product
-                        </button>
-                    </form>
-                </div>
-            </div>
         </div>
     </div>
 </form>
@@ -171,10 +183,7 @@
         <div>
             <h3 class="text-sm font-semibold text-gray-900">Variant Groups</h3>
             <p class="text-xs text-gray-400 mt-0.5">
-                Options staff can pick from when adding this product to an order
-                @if(!$product->is_customizable)
-                    — <span class="text-amber-600 font-medium">enable "Has Customizations" above to activate these in POS</span>
-                @endif
+                Options staff can pick from when adding this product to an order. Adding at least one group activates the variant picker in POS.
             </p>
         </div>
         <span class="text-xs bg-indigo-50 text-indigo-600 font-semibold px-2.5 py-1 rounded-full">
@@ -329,6 +338,24 @@
                     <p class="text-teal-500">Pick one or more. Good for "Toppings".</p>
                 </div>
             </div>
+        </div>
+    </div>
+
+    {{-- ── Actions ──────────────────────────────────────────────────────────── --}}
+    <div class="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/40">
+        <button type="submit" form="delete-product-form"
+                class="px-4 py-2 text-red-500 hover:text-red-700 text-sm font-medium flex items-center gap-2 hover:bg-red-50 rounded-xl transition-colors">
+            <i class="fas fa-trash text-xs"></i> Delete Product
+        </button>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('products.index') }}"
+               class="px-5 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-xl transition-colors">
+                Back to Products
+            </a>
+            <button type="submit" form="edit-product-form"
+                    class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm">
+                Save Changes
+            </button>
         </div>
     </div>
 </div>

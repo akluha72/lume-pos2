@@ -51,12 +51,10 @@ class ProductController extends Controller
             'sort_order'      => 'nullable|integer',
             'image'           => 'nullable|image|max:4096',
             'is_available'    => 'nullable|boolean',
-            'is_customizable' => 'nullable|boolean',
         ]);
 
-        $data['is_available']    = $request->boolean('is_available', true);
-        $data['is_customizable'] = $request->boolean('is_customizable');
-        $data['sort_order']      = $data['sort_order'] ?? 0;
+        $data['is_available'] = $request->boolean('is_available', true);
+        $data['sort_order']   = $data['sort_order'] ?? 0;
 
         if ($request->hasFile('image')) {
             $file     = $request->file('image');
@@ -93,13 +91,11 @@ class ProductController extends Controller
             'price'           => 'required|numeric|min:0',
             'sort_order'      => 'nullable|integer',
             'image'           => 'nullable|image|max:4096',
-            'is_available'    => 'nullable|boolean',
-            'is_customizable' => 'nullable|boolean',
+            'is_available' => 'nullable|boolean',
         ]);
 
-        $data['is_available']    = $request->boolean('is_available');
-        $data['is_customizable'] = $request->boolean('is_customizable');
-        $data['sort_order']      = $data['sort_order'] ?? $product->sort_order;
+        $data['is_available'] = $request->boolean('is_available');
+        $data['sort_order']   = $data['sort_order'] ?? $product->sort_order;
 
         if ($request->hasFile('image')) {
             // Remove old image if it was uploaded (not a seeded path)

@@ -92,7 +92,7 @@ Route::middleware(['auth'])->group(function () {
                 'price'          => (float) $p->price,
                 'category'       => $p->category,
                 'isAvailable'    => $p->is_available,
-                'isCustomizable' => $p->is_customizable,
+                'isCustomizable' => $p->variantGroups->isNotEmpty(),
                 'image'          => $p->image ?? '',
                 'variantGroups'  => $p->variantGroups->map(fn ($g) => [
                     'id'            => $g->id,

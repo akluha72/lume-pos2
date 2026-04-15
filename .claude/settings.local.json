@@ -15,7 +15,8 @@
       "Bash(composer show:*)",
       "Bash(composer require:*)",
       "Bash(npm run:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(composer install:*)"
     ]
   }
 }

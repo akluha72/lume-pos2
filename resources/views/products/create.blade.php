@@ -13,21 +13,22 @@
 </div>
 
 <form method="POST" action="{{ route('products.store') }}" enctype="multipart/form-data"
-      x-data="{ imagePreview: null, isCustomizable: false }">
+      x-data="{ imagePreview: null }">
     @csrf
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {{-- Left column: main details --}}
-        <div class="lg:col-span-2 space-y-5">
+        <div class="lg:col-span-2">
 
-            {{-- Basic Info card --}}
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h3 class="text-sm font-semibold text-gray-900 mb-4">Product Details</h3>
 
-                <div class="space-y-4">
-                    {{-- Name --}}
-                    <div>
+                {{-- Name + Image side by side --}}
+                <div class="flex items-start gap-4 mb-4">
+
+                    {{-- Product Name --}}
+                    <div class="flex-1">
                         <label class="block text-xs font-semibold text-gray-600 mb-1.5">Product Name <span class="text-red-400">*</span></label>
                         <input type="text" name="name" value="{{ old('name') }}" required
                                placeholder="e.g. Classic Butterscotch"
@@ -35,20 +36,73 @@
                         @error('name')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
                     </div>
 
+                    {{-- Clickable image preview --}}
+                    <div class="shrink-0 flex flex-col items-center gap-1">
+                        <div class="w-24 h-24 rounded-xl border-2 border-dashed border-gray-200 overflow-hidden flex items-center justify-center bg-gray-50 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-colors"
+                             title="Click to upload image"
+                             @click="$refs.imageInput.click()">
+                            <img x-show="imagePreview" :src="imagePreview" class="w-full h-full object-cover rounded-xl">
+                            <div x-show="!imagePreview" class="flex flex-col items-center gap-1 text-gray-300">
+                                <i class="fas fa-image text-2xl"></i>
+                                <span class="text-[10px] font-medium">Photo</span>
+                            </div>
+                        </div>
+                        <input type="file" name="image" accept="image/*" x-ref="imageInput" class="hidden"
+                               @change="imagePreview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null">
+                        <span class="text-[10px] text-gray-400">PNG/JPG · 4MB</span>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
                     {{-- Category + Price --}}
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
+                        <div x-data="{
+                                open: false,
+                                query: '{{ old('category') }}',
+                                categories: @json($categories->values()),
+                                get filtered() {
+                                    return this.query
+                                        ? this.categories.filter(c => c.toLowerCase().includes(this.query.toLowerCase()))
+                                        : this.categories;
+                                },
+                                get isNew() {
+                                    return this.query && !this.categories.some(c => c.toLowerCase() === this.query.toLowerCase());
+                                },
+                                select(cat) { this.query = cat; this.open = false; }
+                            }" @click.outside="open = false" class="relative">
                             <label class="block text-xs font-semibold text-gray-600 mb-1.5">Category <span class="text-red-400">*</span></label>
-                            <input type="text" name="category" value="{{ old('category') }}" required
-                                   placeholder="e.g. Pastry"
-                                   list="category-suggestions"
+                            <input type="text" name="category" x-model="query" required autocomplete="off"
+                                   placeholder="Select or type new…"
+                                   @focus="open = true"
+                                   @input="open = true"
+                                   @keydown.escape="open = false"
+                                   @keydown.enter.prevent="filtered[0] && !isNew ? select(filtered[0]) : open = false"
                                    class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 @error('category') border-red-400 @enderror">
-                            <datalist id="category-suggestions">
-                                @foreach($categories as $cat)
-                                    <option value="{{ $cat }}">
-                                @endforeach
-                            </datalist>
                             @error('category')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+                            {{-- Dropdown --}}
+                            <div x-show="open && (filtered.length > 0 || isNew)"
+                                 x-transition:enter="transition duration-100"
+                                 x-transition:enter-start="opacity-0 -translate-y-1"
+                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                 class="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                                <div class="max-h-44 overflow-y-auto">
+                                    <template x-for="cat in filtered" :key="cat">
+                                        <button type="button" @click="select(cat)"
+                                                class="w-full text-left px-4 py-2.5 text-sm transition-colors"
+                                                :class="query === cat ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'"
+                                                x-text="cat"></button>
+                                    </template>
+                                </div>
+                                <template x-if="isNew">
+                                    <div class="border-t border-gray-100">
+                                        <button type="button" @click="select(query)"
+                                                class="w-full text-left px-4 py-2.5 text-sm text-indigo-600 hover:bg-indigo-50 font-medium flex items-center gap-1.5 transition-colors">
+                                            <i class="fas fa-plus text-xs"></i>
+                                            Create "<span x-text="query" class="font-bold"></span>"
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 mb-1.5">Base Price (RM) <span class="text-red-400">*</span></label>
@@ -63,7 +117,7 @@
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1.5">Description</label>
                         <textarea name="description" rows="3"
-                                  placeholder="Optional short description shown on POS…"
+                                  placeholder="Optional short description…"
                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none">{{ old('description') }}</textarea>
                     </div>
 
@@ -77,78 +131,31 @@
                     </div>
                 </div>
             </div>
-
-            {{-- Image card --}}
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h3 class="text-sm font-semibold text-gray-900 mb-4">Product Image</h3>
-                <div class="flex items-start gap-5">
-                    {{-- Preview --}}
-                    <div class="w-28 h-28 rounded-xl border-2 border-dashed border-gray-200 overflow-hidden shrink-0 flex items-center justify-center bg-gray-50">
-                        <img x-show="imagePreview" :src="imagePreview" class="w-full h-full object-cover rounded-xl">
-                        <i x-show="!imagePreview" class="fas fa-image text-gray-300 text-3xl"></i>
-                    </div>
-                    <div class="flex-1">
-                        <label class="block text-xs font-semibold text-gray-600 mb-2">Upload image</label>
-                        <input type="file" name="image" accept="image/*"
-                               class="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                               @change="imagePreview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null">
-                        <p class="text-xs text-gray-400 mt-1.5">PNG, JPG or JPEG — max 4 MB</p>
-                    </div>
-                </div>
-            </div>
         </div>
 
-        {{-- Right column: settings --}}
+        {{-- Right column: settings + actions --}}
         <div class="space-y-5">
 
-            {{-- Availability card --}}
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h3 class="text-sm font-semibold text-gray-900 mb-4">Settings</h3>
-                <div class="space-y-4">
-
-                    {{-- Available toggle --}}
-                    <label class="flex items-start gap-3 cursor-pointer">
-                        <div class="mt-0.5">
-                            <input type="hidden" name="is_available" value="0">
-                            <input type="checkbox" name="is_available" value="1"
-                                   {{ old('is_available', '1') == '1' ? 'checked' : '' }}
-                                   class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-300">
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-800">Available on POS</p>
-                            <p class="text-xs text-gray-400">Show this product for sale in the Point of Sale screen</p>
-                        </div>
-                    </label>
-
-                    <div class="border-t border-gray-100 pt-4">
-                        {{-- Customizable toggle --}}
-                        <label class="flex items-start gap-3 cursor-pointer">
-                            <div class="mt-0.5">
-                                <input type="hidden" name="is_customizable" value="0">
-                                <input type="checkbox" name="is_customizable" value="1"
-                                       x-model="isCustomizable"
-                                       {{ old('is_customizable') ? 'checked' : '' }}
-                                       class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-300">
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-gray-800">Has Customizations</p>
-                                <p class="text-xs text-gray-400">Allows staff to pick variants (toppings, sauce, etc.) when adding to order</p>
-                            </div>
-                        </label>
-                        <div x-show="isCustomizable" x-transition
-                             class="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-                            <i class="fas fa-info-circle mr-1"></i>
-                            After saving, you'll be taken to the edit page where you can add variant groups and options.
-                        </div>
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <div class="mt-0.5">
+                        <input type="hidden" name="is_available" value="0">
+                        <input type="checkbox" name="is_available" value="1"
+                               {{ old('is_available', '1') == '1' ? 'checked' : '' }}
+                               class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-300">
                     </div>
-                </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-800">Available on POS</p>
+                        <p class="text-xs text-gray-400">Show this product for sale in the Point of Sale screen</p>
+                    </div>
+                </label>
             </div>
 
-            {{-- Actions --}}
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-3">
                 <button type="submit"
                         class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm">
-                    Save Product
+                    Add Product
                 </button>
                 <a href="{{ route('products.index') }}"
                    class="block text-center w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-colors">
@@ -158,5 +165,6 @@
         </div>
     </div>
 </form>
+
 
 @endsection
