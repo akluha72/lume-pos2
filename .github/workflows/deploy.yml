@@ -29,6 +29,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
           script: |
             cd /home/u562588233/domains/lume-live.raikancinta.com/lume-pos2
             git pull origin main
@@ -39,6 +40,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
           source: "public/build"
           target: "/home/u562588233/domains/lume-live.raikancinta.com/lume-pos2/public/"
 
@@ -48,6 +50,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
           script: |
             cd /home/u562588233/domains/lume-live.raikancinta.com/lume-pos2
             composer install --no-dev --optimize-autoloader --no-interaction
