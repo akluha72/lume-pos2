@@ -32,19 +32,19 @@ jobs:
           npm ci
           npm run build
 
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@4.3.4
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /home/u562588233/domains/lume-live.raikancinta.com/lume-pos2/
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            .env
-            **/tests/**
-            **/storage/logs/**
-            **/storage/framework/**
-            **/storage/app/public/**
+      - name: Deploy via FTP (lftp)
+        run: |
+          sudo apt-get install -y lftp
+          lftp -e "
+            set ftp:ssl-allow no;
+            open -u ${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }};
+            mirror --reverse --delete --verbose \
+              --exclude ^\.git \
+              --exclude ^node_modules/ \
+              --exclude ^\.env \
+              --exclude ^tests/ \
+              --exclude ^storage/logs/ \
+              --exclude ^storage/framework/ \
+              . /home/u562588233/domains/lume-live.raikancinta.com/lume-pos2/;
+            quit
+          "
