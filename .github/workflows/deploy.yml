@@ -12,39 +12,46 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup PHP 8.2
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: mbstring, bcmath, pdo, pdo_mysql, xml, curl, zip
-
-      - name: Install Composer dependencies
-        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
-
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install npm dependencies & build assets
+      - name: Build assets
         run: |
           npm ci
           npm run build
 
-      - name: Deploy via FTP (lftp)
-        run: |
-          sudo apt-get install -y lftp
-          lftp -e "
-            set ftp:ssl-allow no;
-            open -u ${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }};
-            mirror --reverse --delete --verbose \
-              --exclude ^\.git \
-              --exclude ^node_modules/ \
-              --exclude ^\.env \
-              --exclude ^tests/ \
-              --exclude ^storage/logs/ \
-              --exclude ^storage/framework/ \
-              . /home/u562588233/domains/lume-live.raikancinta.com/lume-pos2/;
-            quit
-          "
+      - name: Pull latest code on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            cd /home/u562588233/domains/lume-live.raikancinta.com/lume-pos2
+            git pull origin main
+
+      - name: Copy built assets to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: "public/build"
+          target: "/home/u562588233/domains/lume-live.raikancinta.com/lume-pos2/public/"
+
+      - name: Run post-deploy commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            cd /home/u562588233/domains/lume-live.raikancinta.com/lume-pos2
+            composer install --no-dev --optimize-autoloader --no-interaction
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
