@@ -27,6 +27,25 @@
     @csrf @method('DELETE')
 </form>
 
+<script>
+function categoryDropdown() {
+    return {
+        open: false,
+        query: '{{ old('category', $product->category) }}',
+        categories: @json($categories->values()),
+        get filtered() {
+            return this.query
+                ? this.categories.filter(c => c.toLowerCase().includes(this.query.toLowerCase()))
+                : this.categories;
+        },
+        get isNew() {
+            return this.query && !this.categories.some(c => c.toLowerCase() === this.query.toLowerCase());
+        },
+        select(cat) { this.query = cat; this.open = false; }
+    };
+}
+</script>
+
 <form id="edit-product-form" method="POST" action="{{ route('products.update', $product) }}" enctype="multipart/form-data"
       x-data="{ imagePreview: null }">
     @csrf @method('PUT')
@@ -75,20 +94,7 @@
 
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
-                        <div x-data="{
-                                open: false,
-                                query: '{{ old('category', $product->category) }}',
-                                categories: @json($categories->values()),
-                                get filtered() {
-                                    return this.query
-                                        ? this.categories.filter(c => c.toLowerCase().includes(this.query.toLowerCase()))
-                                        : this.categories;
-                                },
-                                get isNew() {
-                                    return this.query && !this.categories.some(c => c.toLowerCase() === this.query.toLowerCase());
-                                },
-                                select(cat) { this.query = cat; this.open = false; }
-                            }" @click.outside="open = false" class="relative">
+                        <div x-data="categoryDropdown()" @click.outside="open = false" class="relative">
                             <label class="block text-xs font-semibold text-gray-600 mb-1.5">Category <span class="text-red-400">*</span></label>
                             <input type="text" name="category" x-model="query" required autocomplete="off"
                                    placeholder="Select or type new…"
